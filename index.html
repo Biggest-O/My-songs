@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big O - Neon Rain Restored</title> 
+<title>Big O - Neon Rain Final</title> 
 <style>
   body { margin: 0; font-family: 'Inter', sans-serif; background: #010103; color: white; padding-bottom: 220px; overflow-x: hidden; }
   header { height: 50vh; position: relative; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
@@ -29,7 +29,7 @@
   <canvas id="viz"></canvas>
 </header>
 
-<main id="song-container">Loading Tracks...</main>
+<main id="song-container">Connecting to Supabase...</main>
 
 <div class="footer-player">
   <div id="track-display">PICK A TRACK TO START</div>
@@ -49,7 +49,7 @@ const SUPABASE_URL = 'https://gbywinmjvbgrtaazjlgm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// IDs updated to match your underscore table naming
+// IDs match your table screenshot exactly
 const tracks = [
   { id: "when_i_think_about_you", t: "When I Think About You", f: "songs/when-i-think-about-you.mp3" },
   { id: "ariya", t: "Ariya", f: "songs/ariya.mp3" },
@@ -63,42 +63,38 @@ let isShuffle = false, isRepeat = false, drops = [];
 
 // --- REFRESH UI ---
 async function refreshList() {
-  try {
-    const { data: votesData, error } = await sb.from('Votes').select('*');
-    if (error) console.error("Fetch Error:", error);
-
-    const container = document.getElementById('song-container');
-    container.innerHTML = tracks.map((s, index) => {
-      const v = votesData?.find(r => r.song_id === s.id) || { likes: 0, dislikes: 0 };
-      return `
-        <div class="track-card">
-          <div>
-            <h3 style="margin:0; font-size: 1.2rem; letter-spacing: 1px;">${s.t}</h3>
-            <div class="vote-container">
-              <button class="vote-button" onclick="handleVote('${s.id}','likes')">👍 ${v.likes}</button>
-              <button class="vote-button" onclick="handleVote('${s.id}','dislikes')">👎 ${v.dislikes}</button>
-            </div>
+  const { data: votesData, error } = await sb.from('Votes').select('*');
+  const container = document.getElementById('song-container');
+  
+  container.innerHTML = tracks.map((s, index) => {
+    const v = votesData?.find(r => r.song_id === s.id) || { likes: 0, dislikes: 0 };
+    return `
+      <div class="track-card">
+        <div>
+          <h3 style="margin:0; font-size: 1.2rem; letter-spacing: 1px;">${s.t}</h3>
+          <div class="vote-container">
+            <button class="vote-button" onclick="handleVote('${s.id}','likes')">👍 ${v.likes}</button>
+            <button class="vote-button" onclick="handleVote('${s.id}','dislikes')">👎 ${v.dislikes}</button>
           </div>
-          <button class="action-btn" onclick="initAndPlay(${index})">Play</button>
-        </div>`;
-    }).join('');
-  } catch (err) {
-    console.log("UI Syncing...");
-  }
+        </div>
+        <button class="action-btn" onclick="initAndPlay(${index})">Play</button>
+      </div>`;
+  }).join('');
 }
 
-// --- VOTE LOGIC ---
-async function handleVote(songId, type) {
-  // Using the RPC function you just successfully created in Supabase
-  const { error } = await sb.rpc('increment_vote', { song: songId, col: type });
+// --- DB VOTE ---
+async function handleVote(songId, colName) {
+  // RPC calls your SQL function 'increment_vote'
+  const { error } = await sb.rpc('increment_vote', { song: songId, col: colName });
   if (error) {
-    console.error("Database Error:", error.message);
+    console.error("Vote Error:", error.message);
   } else {
-    refreshList(); 
+    // Wait briefly for DB to finish, then update screen
+    setTimeout(refreshList, 400); 
   }
 }
 
-// --- AUDIO LOGIC ---
+// --- PLAYER LOGIC ---
 function initAndPlay(i) {
   currentIdx = i; audio.src = tracks[currentIdx].f; audio.play();
   document.getElementById('track-display').innerText = "PLAYING: " + tracks[currentIdx].t;
@@ -148,6 +144,7 @@ function setupVisualizer() {
   source = context.createMediaElementSource(audio);
   source.connect(analyser); analyser.connect(context.destination);
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
   for(let i=0; i<60; i++) drops.push({x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight, s: 2+Math.random()*4});
 
   function animate() {
