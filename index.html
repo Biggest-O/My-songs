@@ -5,30 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Big O - Music</title>
 <style>
-  body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #05050a; color: white; overflow-x: hidden; padding-bottom: 120px; }
+  body { margin: 0; font-family: 'Inter', sans-serif; background: #010103; color: white; padding-bottom: 140px; overflow-x: hidden; }
   
-  /* Header & Logo */
-  header { height: 60vh; position: relative; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #0a0a1f 0%, #05050a 100%); overflow: hidden; }
-  h1 { font-size: 5rem; font-weight: 900; z-index: 10; letter-spacing: 12px; color: white; pointer-events: none; transition: 0.1s; }
+  /* Modern Header */
+  header { height: 60vh; position: relative; display: flex; align-items: center; justify-content: center; background: #010103; overflow: hidden; }
   
-  /* Canvas for Visualizer */
+  /* The BIG O - Now with a cleaner, sharper neon glow */
+  h1 { font-size: 7rem; font-weight: 900; z-index: 10; letter-spacing: 20px; color: #fff; pointer-events: none; text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+  
   canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-  /* Song List */
-  main { padding: 2rem; max-width: 800px; margin: auto; }
-  .track { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
-  .song-info h3 { margin: 0; font-weight: 300; letter-spacing: 1px; }
+  /* Minimalist Song List */
+  main { padding: 3rem 1rem; max-width: 800px; margin: auto; }
+  .track-card { background: linear-gradient(145deg, #0a0a0f, #050507); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+  .track-card:hover { border-color: #00ffff; transform: translateY(-3px); }
   
-  /* Buttons */
-  button { background: transparent; border: 1px solid #00ffff; color: #00ffff; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-  button:hover { background: #00ffff; color: #05050a; box-shadow: 0 0 15px #00ffff; }
-  .vote-btns { margin-top: 10px; display: flex; gap: 10px; }
-  .btn-v { border: 1px solid rgba(255,255,255,0.2); color: white; padding: 5px 12px; font-size: 0.8rem; }
+  .song-meta h3 { margin: 0; font-size: 1.3rem; font-weight: 400; color: #eee; }
+  .vote-row { margin-top: 12px; display: flex; gap: 8px; }
+  
+  /* Action Buttons */
+  button { background: none; border: 1px solid #00ffff; color: #00ffff; padding: 10px 24px; border-radius: 50px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; transition: 0.3s; }
+  button:hover { background: #00ffff; color: #000; box-shadow: 0 0 20px rgba(0,255,255,0.4); }
+  .vote-btn { border: 1px solid #333; color: #888; padding: 6px 14px; }
 
-  /* Bottom Player Controls */
-  .player { position: fixed; bottom: 0; width: 100%; background: rgba(5,5,10,0.95); border-top: 1px solid rgba(0,255,255,0.2); padding: 20px; display: flex; flex-direction: column; align-items: center; z-index: 100; backdrop-filter: blur(20px); }
-  #status { font-size: 0.8rem; color: #00ffff; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 2px; }
-  .ctrl-row { display: flex; gap: 20px; }
+  /* Bottom Control Bar */
+  .footer-player { position: fixed; bottom: 0; width: 100%; background: rgba(1,1,3,0.98); border-top: 1px solid rgba(255,255,255,0.1); padding: 25px; display: flex; flex-direction: column; align-items: center; z-index: 100; backdrop-filter: blur(15px); }
+  #track-name { font-size: 0.75rem; color: #00ffff; letter-spacing: 4px; margin-bottom: 15px; opacity: 0.8; }
+  .controls { display: flex; gap: 25px; align-items: center; }
 </style>
 </head>
 <body>
@@ -38,13 +41,13 @@
   <canvas id="viz"></canvas>
 </header>
 
-<main id="list"></main>
+<main id="song-container"></main>
 
-<div class="player">
-  <div id="status">Select a Track</div>
-  <div class="ctrl-row">
+<div class="footer-player">
+  <div id="track-name">READY TO PLAY</div>
+  <div class="controls">
     <button onclick="prev()">Prev</button>
-    <button onclick="toggle()" id="playBtn" style="min-width: 100px;">Play</button>
+    <button onclick="toggle()" id="playBtn" style="min-width: 120px;">Play</button>
     <button onclick="next()">Next</button>
   </div>
 </div>
@@ -58,86 +61,92 @@ const tracks = [
   { id: 4, t: "Feeling Down", f: "songs/feeling-down.mp3" }
 ];
 
-let audio = new Audio(), idx = 0, ac, an, src, hue = 180;
-const likes = JSON.parse(localStorage.getItem('bo_likes') || '{}');
+let audio = new Audio(), currentIdx = 0, context, analyser, source, hue = 200;
+const storageKey = 'big_o_votes';
+let votes = JSON.parse(localStorage.getItem(storageKey) || '{}');
 
-function render() {
-  const list = document.getElementById('list');
-  list.innerHTML = tracks.map(s => {
-    if(!likes[s.id]) likes[s.id] = {up:0, dn:0};
+function refreshList() {
+  const container = document.getElementById('song-container');
+  container.innerHTML = tracks.map(s => {
+    if(!votes[s.id]) votes[s.id] = {up:0, dn:0};
     return `
-      <div class="track">
-        <div class="song-info">
+      <div class="track-card">
+        <div class="song-meta">
           <h3>${s.t}</h3>
-          <div class="vote-btns">
-            <button class="btn-v" onclick="vote(${s.id},'up')">👍 ${likes[s.id].up}</button>
-            <button class="btn-v" onclick="vote(${s.id},'dn')">👎 ${likes[s.id].dn}</button>
+          <div class="vote-row">
+            <button class="vote-btn" onclick="handleVote(${s.id},'up')">👍 ${votes[s.id].up}</button>
+            <button class="vote-btn" onclick="handleVote(${s.id},'dn')">👎 ${votes[s.id].dn}</button>
           </div>
         </div>
-        <button onclick="play(${s.id})">Listen</button>
+        <button onclick="initAndPlay(${s.id})">Play Track</button>
       </div>
     `;
   }).join('');
 }
-render();
+refreshList();
 
-function play(i) {
-  idx = i; audio.src = tracks[idx].f; audio.play();
-  document.getElementById('status').innerText = "Playing: " + tracks[idx].t;
+function initAndPlay(i) {
+  currentIdx = i;
+  audio.src = tracks[currentIdx].f;
+  audio.play();
+  document.getElementById('track-name').innerText = tracks[currentIdx].t;
   document.getElementById('playBtn').innerText = "Pause";
-  if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); startViz(); }
-}
-
-function startViz() {
-  const c = document.getElementById('viz'), ctx = c.getContext('2d');
-  an = ac.createAnalyser(); an.fftSize = 512;
-  src = ac.createMediaElementSource(audio); src.connect(an); an.connect(ac.destination);
-  const data = new Uint8Array(an.frequencyBinCount);
-
-  function draw() {
-    requestAnimationFrame(draw);
-    an.getByteFrequencyData(data);
-    c.width = window.innerWidth; c.height = window.innerHeight;
-    ctx.clearRect(0, 0, c.width, c.height);
-
-    hue = (hue + 0.5) % 360;
-    const color = `hsl(${hue}, 100%, 60%)`;
-    const logo = document.getElementById('logo');
-    logo.style.textShadow = `0 0 20px ${color}, 0 0 40px hsl(${(hue+40)%360},100%,50%)`;
-
-    const centerX = c.width / 2, centerY = c.height / 2;
-    
-    // Draw 3 Dynamic Glowing Rings
-    for (let j = 0; j < 3; j++) {
-      ctx.beginPath();
-      ctx.lineWidth = 2 + j * 2;
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.4 - (j * 0.1);
-      
-      const baseRadius = 150 + (j * 50);
-      for (let i = 0; i < data.length; i++) {
-        const angle = (i / data.length) * Math.PI * 2;
-        const v = data[i] / 255;
-        const r = baseRadius + (v * 80);
-        const x = centerX + Math.cos(angle) * r;
-        const y = centerY + Math.sin(angle) * r;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.stroke();
-    }
-
-    // Pulse Logo to Bass
-    const bass = data[5] / 255;
-    logo.style.transform = `scale(${1 + bass * 0.1})`;
+  
+  if (!context) {
+    context = new (window.AudioContext || window.webkitAudioContext)();
+    setupVisualizer();
   }
-  draw();
 }
 
-function vote(id, type) { likes[id][type]++; localStorage.setItem('bo_likes', JSON.stringify(likes)); render(); }
+function setupVisualizer() {
+  const canvas = document.getElementById('viz'), ctx = canvas.getContext('2d');
+  analyser = context.createAnalyser();
+  analyser.fftSize = 128; // Low number = cleaner, thicker beams
+  source = context.createMediaElementSource(audio);
+  source.connect(analyser);
+  analyser.connect(context.destination);
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    canvas.width = window.innerWidth;
+    canvas.height = canvas.parentElement.offsetHeight;
+    analyser.getByteFrequencyData(dataArray);
+    
+    ctx.fillStyle = 'rgba(1, 1, 3, 0.2)'; // Creates a trailing "ghost" effect
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    hue = (hue + 0.3) % 360;
+    const color = `hsl(${hue}, 100%, 50%)`;
+    document.getElementById('logo').style.textShadow = `0 0 30px ${color}, 0 0 60px ${color}`;
+
+    const barWidth = canvas.width / bufferLength;
+    for (let i = 0; i < bufferLength; i++) {
+      const barHeight = (dataArray[i] / 255) * canvas.height;
+      
+      // Draw vertical "Light Beams"
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, 'transparent');
+      gradient.addColorStop(0.5, color);
+      gradient.addColorStop(1, 'transparent');
+
+      ctx.fillStyle = gradient;
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(i * barWidth, 0, barWidth - 2, canvas.height);
+    }
+    
+    // Subtle Logo Pulse
+    const bass = dataArray[2] / 255;
+    document.getElementById('logo').style.transform = `scale(${1 + (bass * 0.05)})`;
+  }
+  animate();
+}
+
+function handleVote(id, type) { votes[id][type]++; localStorage.setItem(storageKey, JSON.stringify(votes)); refreshList(); }
 function toggle() { audio.paused ? audio.play() : audio.pause(); document.getElementById('playBtn').innerText = audio.paused ? "Play" : "Pause"; }
-function next() { play((idx + 1) % tracks.length); }
-function prev() { play((idx - 1 + tracks.length) % tracks.length); }
+function next() { initAndPlay((currentIdx + 1) % tracks.length); }
+function prev() { initAndPlay((currentIdx - 1 + tracks.length) % tracks.length); }
 audio.onended = next;
 </script>
 </body>
