@@ -1,10 +1,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// YOUR SECRET CONNECTION KEYS
+// 1. YOUR CONNECTION KEYS
 const SUPABASE_URL = 'https://gbywinmjvbgrtaazjlgm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// 2. YOUR SONG LIST (Matches the IDs in your database)
 const tracks = [
   { id: "when_i_think_about_you", t: "When I Think About You", f: "songs/when-i-think-about-you.mp3" },
   { id: "ariya", t: "Ariya", f: "songs/ariya.mp3" },
@@ -13,14 +14,13 @@ const tracks = [
   { id: "feeling_down", t: "Feeling Down", f: "songs/feeling-down.mp3" }
 ];
 
-let audio = new Audio(), currentIdx = 0, context, analyser, source, hue = 180;
-let isShuffle = false, isRepeat = false, drops = [];
-
-// FETCH VOTES FROM SUPABASE
+// 3. FETCH VOTES (Points to the "Votes" table)
 async function refreshList() {
-  // Use 'Votes' with a capital V to match your Supabase table!
-  const { data: votes, error } = await sb.from('Votes').select('*');
-  if (error) console.error("Error fetching votes:", error);
+  const { data: votes, error } = await sb.from('Votes').select('*'); // FIXED: Changed to 'Votes'
+  if (error) {
+    console.error("Fetch Error:", error.message);
+    return;
+  }
 
   const container = document.getElementById('song-container');
   container.innerHTML = tracks.map((s, index) => {
@@ -39,23 +39,22 @@ async function refreshList() {
   }).join('');
 }
 
-// UPDATE VOTES IN SUPABASE
+// 4. HANDLE VOTES (Calls your SQL function)
 async function handleVote(songId, column) {
-  // Calls the SQL function you created
   const { error } = await sb.rpc('increment_vote', { 
     song: songId, 
     col: column 
   });
 
   if (error) {
-    console.error("Vote error:", error);
-    alert("Make sure you saved the RLS policy in Supabase!");
+    console.error("Vote Error:", error.message);
+  } else {
+    refreshList(); // Update the UI immediately after voting
   }
-  refreshList();
 }
 
-// INITIAL LOAD
+// Initial Load
 refreshList();
 
-// ... (Keep the rest of your play/next/prev and visualizer functions below) ...
+// ... [Keep your existing audio and visualizer code below this line] ...
 </script>
