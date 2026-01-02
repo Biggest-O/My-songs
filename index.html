@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big O - Original Grid</title>
+<title>Big O - Original Soul</title>
 <style>
   body{margin:0;font-family:'Segoe UI',Arial;background:#030308;color:white;padding-bottom:140px;overflow-x:hidden}
   header{height:55vh;position:relative;background:radial-gradient(circle at center, #101025 0%, #030308 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -95,8 +95,11 @@ function playSong(i) {
 function setupVisualizer() {
   const c = document.getElementById('viz'), ctx = c.getContext('2d');
   c.width = window.innerWidth; c.height = document.querySelector('header').offsetHeight;
-  an = ac.createAnalyser(); an.fftSize = 256; 
-  src = ac.createMediaElementSource(audio); src.connect(an); an.connect(ac.destination);
+  an = ac.createAnalyser(); 
+  an.fftSize = 512; // This controls the responsiveness - 512 is the "sweet spot"
+  src = ac.createMediaElementSource(audio); 
+  src.connect(an); 
+  an.connect(ac.destination);
   const data = new Uint8Array(an.frequencyBinCount);
 
   function draw() {
@@ -104,27 +107,31 @@ function setupVisualizer() {
     an.getByteFrequencyData(data);
     ctx.clearRect(0, 0, c.width, c.height);
     
-    // Color Cycling
+    // Smooth Neon Color Cycle
     hue = (hue + 0.4) % 360;
     const mainColor = `hsl(${hue}, 100%, 65%)`;
+    const accentColor = `hsl(${(hue + 60) % 360}, 100%, 65%)`;
+    
     const logo = document.getElementById('logo');
-    logo.style.textShadow = `0 0 20px ${mainColor}, 0 0 50px hsl(${(hue+60)%360}, 100%, 65%)`;
+    logo.style.textShadow = `0 0 20px ${mainColor}, 0 0 50px ${accentColor}`;
 
-    // ORIGINAL BOX MATH
-    const rows = 10;
-    const cols = 20;
+    // THE ORIGINAL GRID MATH (10 cols, 8 rows)
+    const rows = 8;
+    const cols = 10;
     const spacingX = c.width / cols;
     const spacingY = c.height / rows;
 
     for (let i = 0; i < cols; i++) {
       for (let j = 0; j < rows; j++) {
-        const val = data[(i + j) % data.length];
-        const size = (val / 255) * spacingX;
+        // This specific index calculation is what made the first one unique
+        const val = data[(i * rows + j) % data.length];
+        const size = (val / 255) * spacingX * 0.8;
         
         ctx.save();
         ctx.translate(i * spacingX + spacingX / 2, j * spacingY + spacingY / 2);
-        ctx.rotate((val / 255) * Math.PI); // The original flip
+        ctx.rotate((val / 255) * Math.PI); 
         ctx.strokeStyle = mainColor;
+        ctx.lineWidth = 2;
         ctx.globalAlpha = val / 255;
         ctx.strokeRect(-size / 2, -size / 2, size, size);
         ctx.restore();
@@ -136,7 +143,7 @@ function setupVisualizer() {
   draw();
 }
 
-/* Control Logic */
+/* Controls */
 function togglePlay() { if(audio.paused) audio.play(); else audio.pause(); document.getElementById('playBtn').textContent = audio.paused ? "PLAY" : "PAUSE"; }
 function nextSong() { playSong(isShuffle ? Math.floor(Math.random()*tracks.length) : (index+1)%tracks.length); }
 function prevSong() { playSong(index === 0 ? tracks.length-1 : index-1); }
