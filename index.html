@@ -3,16 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big O - Color Drift</title>
+<title>Big O - Stable Neon</title>
 <style>
   body{margin:0;font-family:'Segoe UI',Arial;background:#030308;color:white;padding-bottom:140px;overflow-x:hidden}
   header{height:55vh;position:relative;background:radial-gradient(circle at center, #101025 0%, #030308 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  h1{font-size:6rem;font-weight:900;z-index:2;color:white;letter-spacing:15px;pointer-events:none;transition: text-shadow 0.1s ease;}
+  
+  /* BIG O Logo with vibrant initial color */
+  h1{font-size:6rem;font-weight:900;z-index:2;color:white;letter-spacing:15px;pointer-events:none;
+     text-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; transition: text-shadow 0.5s ease;}
+  
   canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1}
   
   main{padding:2rem;max-width:750px;margin:auto;position:relative;z-index:2}
-  .track{background:rgba(255,255,255,.02);padding:1.5rem;border-radius:15px;margin-bottom:1.5rem;border:1px solid rgba(255,255,255,0.05);transition:0.4s;display:flex;justify-content:space-between;align-items:center}
-  .track:hover{background:rgba(255,255,255, 0.04);border-color:rgba(255,255,255,0.4);transform:translateY(-2px)}
+  .track{background:rgba(255,255,255,.02);padding:1.5rem;border-radius:15px;margin-bottom:1.5rem;border:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center}
   
   button{background:transparent;border:1px solid #00ffff;padding:10px 20px;border-radius:30px;cursor:pointer;font-weight:bold;color:#00ffff;text-transform:uppercase;font-size:0.75rem;letter-spacing:1px;transition:0.3s}
   button:hover{background:#00ffff;color:#030308;box-shadow:0 0 15px #00ffff}
@@ -20,7 +23,7 @@
   .active{background:#ff00ff !important;border-color:#ff00ff !important;color:white !important}
   
   .controls{position:fixed;bottom:0;left:0;width:100%;background:rgba(3,3,8,0.95);backdrop-filter:blur(20px);padding:20px;display:flex;flex-direction:column;align-items:center;border-top:1px solid rgba(255,255,255,0.1);z-index:10}
-  #now{color:#00ffff;font-size:0.8rem;margin-bottom:12px;letter-spacing:3px;font-weight:300;opacity:0.7}
+  #now{color:#00ffff;font-size:0.8rem;margin-bottom:12px;letter-spacing:3px;opacity:0.7}
   .btn-group{display:flex;gap:15px}
 </style>
 </head>
@@ -34,7 +37,7 @@
 <main id="list"></main>
 
 <div class="controls">
-  <div id="now">SELECT A COMPOSITION</div>
+  <div id="now">SELECT A SONG</div>
   <div class="btn-group">
     <button onclick="toggleShuffle()" id="shuffleBtn">Shuffle</button>
     <button onclick="prevSong()">Prev</button>
@@ -81,7 +84,7 @@ function playSong(i) {
   if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); setupVisualizer(); }
   if (ac.state === 'suspended') ac.resume();
   audio.play().then(() => {
-    document.getElementById('now').textContent = "NOW PLAYING: " + tracks[index].t;
+    document.getElementById('now').textContent = "PLAYING: " + tracks[index].t;
     document.getElementById('playBtn').textContent = "PAUSE";
   });
 }
@@ -89,8 +92,11 @@ function playSong(i) {
 function setupVisualizer() {
   const c = document.getElementById('viz'), ctx = c.getContext('2d');
   c.width = window.innerWidth; c.height = document.querySelector('header').offsetHeight;
-  an = ac.createAnalyser(); an.fftSize = 2048;
-  src = ac.createMediaElementSource(audio); src.connect(an); an.connect(ac.destination);
+  an = ac.createAnalyser(); 
+  an.fftSize = 1024; // Lower FFT size = smoother, less "spazzy" line
+  src = ac.createMediaElementSource(audio); 
+  src.connect(an); 
+  an.connect(ac.destination);
   const data = new Uint8Array(an.frequencyBinCount);
 
   function draw() {
@@ -98,17 +104,49 @@ function setupVisualizer() {
     an.getByteTimeDomainData(data);
     ctx.clearRect(0, 0, c.width, c.height);
     
-    // Increment color hue slowly
-    hue = (hue + 0.2) % 360;
-    const currentColor = `hsl(${hue}, 100%, 60%)`;
+    // Color Cycling (Cycles every few seconds)
+    hue = (hue + 0.5) % 360;
+    const color = `hsl(${hue}, 100%, 65%)`;
+    const secondary = `hsl(${(hue + 60) % 360}, 100%, 65%)`;
     
-    // Update Logo Glow to match
-    document.getElementById('logo').style.textShadow = `0 0 40px ${currentColor}`;
+    // Logo styling: Vibrant and shifting
+    const logo = document.getElementById('logo');
+    logo.style.textShadow = `0 0 20px ${color}, 0 0 50px ${secondary}`;
 
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = currentColor;
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = currentColor;
+    // Horizon Line Styling
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = color;
     ctx.beginPath();
 
-    const
+    const sliceWidth = c.width / data.length;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] / 128.0;
+      const y = (v * c.height / 2);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    ctx.lineTo(c.width, c.height / 2);
+    ctx.stroke();
+
+    // Smooth Pulse
+    an.getByteFrequencyData(data);
+    const bass = data[5] / 255;
+    logo.style.transform = `scale(${1 + bass * 0.08})`;
+  }
+  draw();
+}
+
+function togglePlay() { if(audio.paused) audio.play(); else audio.pause(); document.getElementById('playBtn').textContent = audio.paused ? "PLAY" : "PAUSE"; }
+function nextSong() { playSong(isShuffle ? Math.floor(Math.random()*tracks.length) : (index+1)%tracks.length); }
+function prevSong() { playSong(index === 0 ? tracks.length-1 : index-1); }
+function toggleShuffle() { isShuffle = !isShuffle; document.getElementById('shuffleBtn').classList.toggle('active'); }
+function toggleRepeat() { isRepeat = !isRepeat; audio.loop = isRepeat; document.getElementById('repeatBtn').classList.toggle('active'); }
+function vote(id, type) { likes[id][type]++; localStorage.setItem('likes', JSON.stringify(likes)); buildList(); }
+audio.onended = () => { if(!isRepeat) nextSong(); };
+window.onresize = () => { c.width = window.innerWidth; c.height = document.querySelector('header').offsetHeight; };
+</script>
+</body>
+</html>
