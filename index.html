@@ -3,98 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Music Site</title>
+    <title>My Music Experience</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .track-card { 
-            background: #1e1e1e; 
-            margin: 10px auto; 
-            padding: 20px; 
-            border-radius: 12px; 
-            max-width: 400px;
-            border: 1px solid #333;
-        }
-        .vote-container { margin: 15px 0; }
-        button { 
-            padding: 8px 15px; 
-            margin: 5px; 
-            cursor: pointer; 
-            border-radius: 5px; 
-            border: none;
-            background: #333;
-            color: white;
-        }
-        button:hover { background: #444; }
-        .play-btn { background: #1DB954; font-weight: bold; }
+        body { margin:0; overflow:hidden; background:#000; font-family:sans-serif; color:white; }
+        canvas { display:block; }
+        #ui { position:absolute; top:20px; left:20px; z-index:10; width:320px; max-height:90vh; overflow-y:auto; background:rgba(0,0,0,0.7); padding:20px; border-radius:15px; border:1px solid #333; }
+        .track-card { background:#111; margin-bottom:10px; padding:15px; border-radius:10px; border:1px solid #222; }
+        .vote-btn { background:#222; color:white; border:1px solid #444; padding:5px 10px; border-radius:5px; cursor:pointer; margin-right:5px; }
+        .vote-btn:hover { background:#333; }
+        .play-btn { background:#1DB954; color:white; border:none; padding:8px 15px; border-radius:20px; font-weight:bold; cursor:pointer; float:right; }
+        h1 { font-size:1.5rem; margin-top:0; color:#1DB954; }
     </style>
 </head>
 <body>
 
-    <h1>My Music Tracks</h1>
+    <div id="ui">
+        <h1>My Tracks</h1>
+        <div id="song-container">Connecting to database...</div>
+    </div>
 
-    <div id="song-container">Loading tracks...</div>
+    <canvas id="canvas"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <script>
-        // 1. CONNECTION CONFIG
+        // 1. SUPABASE CONFIG
         const SUPABASE_URL = 'https://gbywinmjvbgrtaazjlgm.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const tracks = [
-            { id: "when_i_think_about_you", t: "When I Think About You" },
-            { id: "ariya", t: "Ariya" },
-            { id: "nice_like_this", t: "Nice Like This" },
-            { id: "youre_my_home", t: "You're My Home" },
-            { id: "feeling_down", t: "Feeling Down" }
+            { id: "when_i_think_about_you", t: "When I Think About You", f: "songs/when-i-think-about-you.mp3" },
+            { id: "ariya", t: "Ariya", f: "songs/ariya.mp3" },
+            { id: "nice_like_this", t: "Nice Like This", f: "songs/nice-like-this.mp3" },
+            { id: "youre_my_home", t: "You're My Home", f: "songs/youre-my-home.mp3" },
+            { id: "feeling_down", t: "Feeling Down", f: "songs/feeling-down.mp3" }
         ];
 
-        // 2. WAIT FOR PAGE TO BE READY
-        document.addEventListener('DOMContentLoaded', () => {
-            refreshList();
-        });
+        // 2. AUDIO & VISUALIZER LOGIC
+        let audio = new Audio(), context, analyser, source, canv = document.getElementById('canvas'), ctx = canv.getContext('2d');
+        let currentIdx = 0;
 
-        // 3. FETCH DATA FROM 'Votes' TABLE
+        function initAndPlay(idx) {
+            if(!context) {
+                context = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = context.createAnalyser();
+                source = context.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(context.destination);
+                animate();
+            }
+            currentIdx = idx;
+            audio.src = tracks[idx].f;
+            audio.play();
+            context.resume();
+        }
+
+        // 3. DATABASE LOGIC
         async function refreshList() {
             const container = document.getElementById('song-container');
-            if (!container) return;
-
             const { data: votes, error } = await sb.from('Votes').select('*');
             
-            if (error) {
-                console.error("Supabase Error:", error.message);
-                container.innerHTML = "Error loading votes. Check console.";
-                return;
-            }
+            if (error) { console.error(error); return; }
 
             container.innerHTML = tracks.map((s, index) => {
                 const v = votes?.find(row => row.song_id === s.id) || { likes: 0, dislikes: 0 };
                 return `
                     <div class="track-card">
-                        <h3 style="margin:0;">${s.t}</h3>
-                        <div class="vote-container">
-                            <button onclick="handleVote('${s.id}', 'likes')">👍 ${v.likes}</button>
-                            <button onclick="handleVote('${s.id}', 'dislikes')">👎 ${v.dislikes}</button>
+                        <button class="play-btn" onclick="initAndPlay(${index})">Play</button>
+                        <h3 style="margin:0; font-size:1rem;">${s.t}</h3>
+                        <div style="margin-top:10px;">
+                            <button class="vote-btn" onclick="handleVote('${s.id}', 'likes')">👍 ${v.likes}</button>
+                            <button class="vote-btn" onclick="handleVote('${s.id}', 'dislikes')">👎 ${v.dislikes}</button>
                         </div>
-                        <button class="play-btn" onclick="alert('Playing ${s.t}...')">Play Song</button>
                     </div>`;
             }).join('');
         }
 
-        // 4. UPDATE DATA VIA SQL FUNCTION
         async function handleVote(songId, column) {
-            const { error } = await sb.rpc('increment_vote', { 
-                song: songId, 
-                col: column 
-            });
+            const { error } = await sb.rpc('increment_vote', { song: songId, col: column });
+            if (error) console.error(error);
+            refreshList();
+        }
 
-            if (error) {
-                console.error("Vote Error:", error.message);
-            } else {
-                refreshList(); // Refresh numbers immediately
+        // 4. THE VISUALIZER DRAWING
+        function animate() {
+            requestAnimationFrame(animate);
+            canv.width = window.innerWidth;
+            canv.height = window.innerHeight;
+            let data = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(data);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0,0,canv.width, canv.height);
+            
+            let barWidth = (canv.width / data.length) * 2.5;
+            let x = 0;
+            for(let i=0; i<data.length; i++) {
+                let h = data[i] * 2;
+                ctx.fillStyle = `hsl(${i + 180}, 100%, 50%)`;
+                ctx.fillRect(x, canv.height - h, barWidth, h);
+                x += barWidth + 1;
             }
         }
+
+        document.addEventListener('DOMContentLoaded', refreshList);
     </script>
 </body>
 </html>
