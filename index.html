@@ -1,3 +1,5 @@
+<div id="song-container"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // 1. YOUR CONNECTION KEYS
@@ -5,7 +7,7 @@ const SUPABASE_URL = 'https://gbywinmjvbgrtaazjlgm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 2. YOUR SONG LIST (Matches the IDs in your database)
+// 2. YOUR SONG LIST
 const tracks = [
   { id: "when_i_think_about_you", t: "When I Think About You", f: "songs/when-i-think-about-you.mp3" },
   { id: "ariya", t: "Ariya", f: "songs/ariya.mp3" },
@@ -14,32 +16,38 @@ const tracks = [
   { id: "feeling_down", t: "Feeling Down", f: "songs/feeling-down.mp3" }
 ];
 
-// 3. FETCH VOTES (Points to the "Votes" table)
+// 3. FETCH VOTES
 async function refreshList() {
-  const { data: votes, error } = await sb.from('Votes').select('*'); // FIXED: Changed to 'Votes'
+  const { data: votes, error } = await sb.from('Votes').select('*');
+  
+  // Find the container we just added
+  const container = document.getElementById('song-container');
+  
+  // This check prevents the "null" error you saw!
+  if (!container) return; 
+
   if (error) {
     console.error("Fetch Error:", error.message);
     return;
   }
 
-  const container = document.getElementById('song-container');
   container.innerHTML = tracks.map((s, index) => {
     const v = votes?.find(row => row.song_id === s.id) || { likes: 0, dislikes: 0 };
     return `
-      <div class="track-card">
+      <div class="track-card" style="border:1px solid #ccc; padding:10px; margin:10px; border-radius:8px;">
         <div>
           <h3 style="margin:0;">${s.t}</h3>
           <div class="vote-container">
-            <button class="vote-button" onclick="handleVote('${s.id}', 'likes')">👍 ${v.likes}</button>
-            <button class="vote-button" onclick="handleVote('${s.id}', 'dislikes')">👎 ${v.dislikes}</button>
+            <button onclick="handleVote('${s.id}', 'likes')">👍 ${v.likes}</button>
+            <button onclick="handleVote('${s.id}', 'dislikes')">👎 ${v.dislikes}</button>
           </div>
         </div>
-        <button class="action-btn" onclick="initAndPlay('${index}')">Play</button>
+        <button onclick="initAndPlay('${index}')">Play</button>
       </div>`;
   }).join('');
 }
 
-// 4. HANDLE VOTES (Calls your SQL function)
+// 4. HANDLE VOTES
 async function handleVote(songId, column) {
   const { error } = await sb.rpc('increment_vote', { 
     song: songId, 
@@ -49,12 +57,12 @@ async function handleVote(songId, column) {
   if (error) {
     console.error("Vote Error:", error.message);
   } else {
-    refreshList(); // Update the UI immediately after voting
+    refreshList(); 
   }
 }
 
 // Initial Load
 refreshList();
 
-// ... [Keep your existing audio and visualizer code below this line] ...
+// ... [The rest of your audio/visualizer code goes here] ...
 </script>
