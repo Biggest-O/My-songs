@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big O - Original Soul</title>
+<title>Big O - Original Restoration</title>
 <style>
   body{margin:0;font-family:'Segoe UI',Arial;background:#030308;color:white;padding-bottom:140px;overflow-x:hidden}
-  header{height:55vh;position:relative;background:radial-gradient(circle at center, #101025 0%, #030308 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  header{height:55vh;position:relative;background:#030308;display:flex;align-items:center;justify-content:center;overflow:hidden;}
   
-  /* Vibrant Neon Logo */
+  /* The Colorful BIG O you liked */
   h1{font-size:6rem;font-weight:900;z-index:2;color:white;letter-spacing:15px;pointer-events:none;
-     text-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; transition: text-shadow 0.3s ease;}
+     text-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; transition: 0.1s;}
   
   canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1}
   
-  main{padding:2rem;max-width:750px;margin:auto;position:relative;z-index:2}
-  .track{background:rgba(255,255,255,.02);padding:1.5rem;border-radius:15px;margin-bottom:1.5rem;border:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center}
+  main{padding:2rem;max-width:700px;margin:auto;position:relative;z-index:2}
+  .track{background:rgba(255,255,255,.05);padding:1.2rem;border-radius:12px;margin-bottom:1rem;border:1px solid #333;display:flex;justify-content:space-between;align-items:center}
   
-  button{background:transparent;border:1px solid #00ffff;padding:10px 20px;border-radius:30px;cursor:pointer;font-weight:bold;color:#00ffff;text-transform:uppercase;font-size:0.75rem;letter-spacing:1px;transition:0.3s}
-  button:hover{background:#00ffff;color:#030308;box-shadow:0 0 15px #00ffff}
-  .btn-vote{border:1px solid rgba(255,255,255,0.2);color:white;margin-left:8px;padding:8px 15px}
-  .active{background:#ff00ff !important;border-color:#ff00ff !important;color:white !important}
+  button{background:#00ffff;border:none;padding:10px 15px;border-radius:5px;cursor:pointer;font-weight:bold;color:#030308;transition:0.2s}
+  button:hover{background:#fff;transform:scale(1.05)}
+  .btn-vote{background:#222;color:white;margin-left:5px;border:1px solid #444}
+  .active{background:#ff00ff !important;color:white}
   
-  .controls{position:fixed;bottom:0;left:0;width:100%;background:rgba(3,3,8,0.95);backdrop-filter:blur(20px);padding:20px;display:flex;flex-direction:column;align-items:center;border-top:1px solid rgba(255,255,255,0.1);z-index:10}
-  #now{color:#00ffff;font-size:0.8rem;margin-bottom:12px;letter-spacing:3px;opacity:0.7}
-  .btn-group{display:flex;gap:15px}
+  .controls{position:fixed;bottom:0;left:0;width:100%;background:#111;padding:20px;display:flex;flex-direction:column;align-items:center;border-top:2px solid #00ffff;z-index:10}
+  #now{color:#00ffff;font-size:0.9rem;margin-bottom:10px;font-weight:bold;text-transform:uppercase}
+  .btn-group{display:flex;gap:12px}
 </style>
 </head>
 <body>
@@ -39,13 +39,13 @@
 </main>
 
 <div class="controls">
-  <div id="now">SELECT A TRACK</div>
+  <div id="now">SELECT A SONG</div>
   <div class="btn-group">
-    <button onclick="toggleShuffle()" id="shuffleBtn">Shuffle</button>
+    <button onclick="toggleShuffle()" id="shuffleBtn">🔀</button>
     <button onclick="prevSong()">⏮</button>
-    <button onclick="togglePlay()" id="playBtn" style="min-width:100px">Pause</button>
+    <button onclick="togglePlay()" id="playBtn">PAUSE</button>
     <button onclick="nextSong()">⏭</button>
-    <button onclick="toggleRepeat()" id="repeatBtn">Repeat</button>
+    <button onclick="toggleRepeat()" id="repeatBtn">🔁</button>
   </div>
 </div>
 
@@ -70,13 +70,13 @@ function buildList() {
     d.className = 'track';
     d.innerHTML = `
       <div>
-        <div style="font-size:1.2rem;font-weight:300;letter-spacing:1px">${s.t}</div>
-        <div style="margin-top:10px">
+        <div style="font-size:1.1rem;font-weight:bold">${s.t}</div>
+        <div style="margin-top:5px">
           <button class="btn-vote" onclick="vote(${s.id},'up')">👍 ${likes[s.id].up}</button>
           <button class="btn-vote" onclick="vote(${s.id},'down')">👎 ${likes[s.id].down}</button>
         </div>
       </div>
-      <button onclick="playSong(${s.id})">Listen</button>
+      <button onclick="playSong(${s.id})">PLAY</button>
     `;
     listContainer.appendChild(d);
   });
@@ -95,11 +95,8 @@ function playSong(i) {
 function setupVisualizer() {
   const c = document.getElementById('viz'), ctx = c.getContext('2d');
   c.width = window.innerWidth; c.height = document.querySelector('header').offsetHeight;
-  an = ac.createAnalyser(); 
-  an.fftSize = 512; // This controls the responsiveness - 512 is the "sweet spot"
-  src = ac.createMediaElementSource(audio); 
-  src.connect(an); 
-  an.connect(ac.destination);
+  an = ac.createAnalyser(); an.fftSize = 256; 
+  src = ac.createMediaElementSource(audio); src.connect(an); an.connect(ac.destination);
   const data = new Uint8Array(an.frequencyBinCount);
 
   function draw() {
@@ -107,38 +104,31 @@ function setupVisualizer() {
     an.getByteFrequencyData(data);
     ctx.clearRect(0, 0, c.width, c.height);
     
-    // Smooth Neon Color Cycle
-    hue = (hue + 0.4) % 360;
-    const mainColor = `hsl(${hue}, 100%, 65%)`;
-    const accentColor = `hsl(${(hue + 60) % 360}, 100%, 65%)`;
-    
-    const logo = document.getElementById('logo');
-    logo.style.textShadow = `0 0 20px ${mainColor}, 0 0 50px ${accentColor}`;
+    // Color Cycling
+    hue = (hue + 1) % 360; 
+    const color = `hsl(${hue}, 100%, 50%)`;
+    document.getElementById('logo').style.textShadow = `0 0 20px ${color}, 0 0 40px #ff00ff`;
 
-    // THE ORIGINAL GRID MATH (10 cols, 8 rows)
-    const rows = 8;
-    const cols = 10;
-    const spacingX = c.width / cols;
-    const spacingY = c.height / rows;
+    // THE ORIGINAL GRID
+    const rows = 10, cols = 10;
+    const w = c.width / cols, h = c.height / rows;
 
     for (let i = 0; i < cols; i++) {
       for (let j = 0; j < rows; j++) {
-        // This specific index calculation is what made the first one unique
-        const val = data[(i * rows + j) % data.length];
-        const size = (val / 255) * spacingX * 0.8;
-        
+        const s = data[(i + j) % data.length];
+        const size = (s / 255) * w;
         ctx.save();
-        ctx.translate(i * spacingX + spacingX / 2, j * spacingY + spacingY / 2);
-        ctx.rotate((val / 255) * Math.PI); 
-        ctx.strokeStyle = mainColor;
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = val / 255;
+        ctx.translate(i * w + w / 2, j * h + h / 2);
+        ctx.rotate((s / 255) * Math.PI); // This is the original "Flipping" math
+        ctx.strokeStyle = color;
         ctx.strokeRect(-size / 2, -size / 2, size, size);
         ctx.restore();
       }
     }
+    
+    // Original Pulse
     const bass = data[2] / 255;
-    logo.style.transform = `scale(${1 + bass * 0.1})`;
+    document.getElementById('logo').style.transform = `scale(${1 + bass * 0.15})`;
   }
   draw();
 }
