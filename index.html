@@ -1,257 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Big O - Official Music</title> 
-<style>
-  /* Global Styles */
-  body { margin: 0; font-family: 'Inter', sans-serif; background: #010103; color: white; padding-bottom: 220px; overflow-x: hidden; }
-  
-  /* Full-screen Neon Rain Background */
-  #viz { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
-  
-  header { height: 45vh; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
-  
-  h1 { font-size: clamp(3rem, 10vw, 6rem); font-weight: 900; letter-spacing: 15px; color: #fff; pointer-events: none; text-transform: uppercase; transition: 0.1s; }
-  
-  main { padding: 2rem 1rem; max-width: 700px; margin: auto; position: relative; z-index: 5; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta property="premid-details" id="premid-details" content="Big O Music">
+    <meta property="premid-state" id="premid-state" content="Browsing Music">
+    <title id="page-title">Big O Music</title>
 
-  /* Track Cards with Glassmorphism */
-  .track-card { 
-    background: rgba(255, 255, 255, 0.08); 
-    border: 1px solid rgba(0, 255, 255, 0.2); 
-    border-radius: 15px; 
-    padding: 1.5rem; 
-    margin-bottom: 1.2rem; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    backdrop-filter: blur(12px); 
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); 
-  }
-
-  .vote-container { display: flex; gap: 10px; margin-top: 12px; }
-  
-  .vote-button { 
-    background: rgba(255, 255, 255, 0.1); 
-    border: 1px solid #444; 
-    color: white; 
-    padding: 8px 15px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-size: 0.9rem; 
-    transition: 0.2s; 
-  }
-  
-  .vote-button:hover { background: rgba(0, 255, 255, 0.2); border-color: #00ffff; }
-
-  button.action-btn { 
-    background: none; 
-    border: 1px solid #00ffff; 
-    color: #00ffff; 
-    padding: 10px 18px; 
-    border-radius: 50px; 
-    cursor: pointer; 
-    font-weight: 600; 
-    text-transform: uppercase; 
-    font-size: 0.7rem; 
-    transition: 0.2s; 
-  }
-
-  button.action-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
-
-  .active { background: #ff00ff !important; border-color: #ff00ff !important; color: white !important; box-shadow: 0 0 20px #ff00ff !important; }
-
-  /* Fixed Player Bar */
-  .footer-player { 
-    position: fixed; 
-    bottom: 0; 
-    width: 100%; 
-    background: rgba(5, 5, 10, 0.9); 
-    border-top: 2px solid #00ffff; 
-    padding: 25px 10px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    z-index: 100; 
-    backdrop-filter: blur(15px); 
-  }
-
-  #track-display { font-size: 0.75rem; color: #00ffff; letter-spacing: 2px; margin-bottom: 15px; font-weight: bold; text-align: center; }
-  
-  .controls-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
-</style>
+    <style>
+        body {
+            background-color: #002b2b; /* Teal Forest Theme */
+            color: #e0f2f1;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .player-card {
+            background: rgba(0, 50, 50, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid #4db6ac;
+            text-align: center;
+            box-shadow: 0 0 30px #26a69a;
+            max-width: 400px;
+        }
+        .forest-img { border-radius: 10px; margin-bottom: 20px; width: 100%; max-width: 250px; }
+        h2 { margin: 10px 0 5px 0; color: #80cbc4; }
+        p { margin: 0 0 20px 0; opacity: 0.8; }
+        button {
+            background: #26a69a;
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 5px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background: #4db6ac; transform: scale(1.05); }
+        audio { margin-top: 20px; width: 100%; filter: invert(100%) hue-rotate(180deg); }
+    </style>
 </head>
 <body>
 
-<canvas id="viz"></canvas>
+    <div class="player-card">
+        <img src="https://i.imgur.com/0qCdct0.png" class="forest-img" alt="Forest Art">
+        
+        <h2 id="display-title">Select a Song</h2>
+        <p id="display-artist">Big O Music</p>
 
-<header>
-  <h1 id="logo">BIG O</h1> 
-</header>
-
-<main id="song-container">Syncing with Neon Network...</main>
-
-<div class="footer-player">
-  <div id="track-display">SELECT A FREQUENCY</div>
-  <div class="controls-row">
-    <button id="shuffleBtn" class="action-btn" onclick="toggleShuffle()">Shuffle</button>
-    <button class="action-btn" onclick="prev()">Prev</button>
-    <button id="playBtn" class="action-btn" onclick="toggle()" style="min-width: 100px;">Play</button>
-    <button class="action-btn" onclick="next()">Next</button>
-    <button id="repeatBtn" class="action-btn" onclick="toggleRepeat()">Repeat</button>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// --- SUPABASE CONFIG ---
-const SUPABASE_URL = 'https://gbywinmjvbgrtaazjlgm.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const tracks = [
-  { id: "when_i_think_about_you", t: "When I Think About You", f: "songs/when-i-think-about-you.mp3" },
-  { id: "ariya", t: "Ariya", f: "songs/ariya.mp3" },
-  { id: "nice_like_this", t: "Nice Like This", f: "songs/nice-like-this.mp3" },
-  { id: "youre_my_home", t: "You're My Home", f: "songs/youre-my-home.mp3" },
-  { id: "feeling_down", t: "Feeling Down", f: "songs/feeling-down.mp3" }
-];
-
-let audio = new Audio(), currentIdx = 0, context, analyser, source, hue = 180;
-let isShuffle = false, isRepeat = false, drops = [];
-
-// --- REFRESH SONG LIST ---
-async function refreshList() {
-  const { data: votesData } = await sb.from('Votes').select('*');
-  const container = document.getElementById('song-container');
-  container.innerHTML = tracks.map((s, index) => {
-    const v = votesData?.find(r => r.song_id === s.id) || { likes: 0, dislikes: 0 };
-    return `
-      <div class="track-card">
-        <div>
-          <h3 style="margin:0; font-size: 1.2rem; letter-spacing: 1px;">${s.t}</h3>
-          <div class="vote-container">
-            <button class="vote-button" onclick="handleVote('${s.id}','likes')">👍 ${v.likes}</button>
-            <button class="vote-button" onclick="handleVote('${s.id}','dislikes')">👎 ${v.dislikes}</button>
-          </div>
+        <div class="controls">
+            <button onclick="playSong('Ariya', 'Big O Music', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3')">Play Ariya</button>
+            <button onclick="playSong('Moonlight', 'Big O Music', 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3')">Play Moonlight</button>
         </div>
-        <button class="action-btn" onclick="initAndPlay(${index})">Play</button>
-      </div>`;
-  }).join('');
-}
 
-// --- VOTE LOGIC (ANTI-SPAM + SWITCHING) ---
-async function handleVote(songId, colName) {
-  const storageKey = `voted_${songId}`;
-  const previousVote = localStorage.getItem(storageKey);
+        <audio id="audio-player" controls>
+            Your browser does not support the audio element.
+        </audio>
+    </div>
 
-  if (previousVote === colName) {
-    alert("You've already chosen this option! ⚡");
-    return;
-  }
+    <script>
+        const audio = document.getElementById('audio-player');
+        const titleText = document.getElementById('display-title');
+        const artistText = document.getElementById('display-artist');
 
-  const { error } = await sb.rpc('increment_vote', { song: songId, col: colName });
-  if (!error) {
-    localStorage.setItem(storageKey, colName);
-    setTimeout(refreshList, 300); 
-  } else {
-    console.error("Database Error:", error.message);
-  }
-}
+        function playSong(song, artist, url) {
+            // 1. Update the UI
+            titleText.innerText = song;
+            artistText.innerText = artist;
 
-// --- PLAYER CONTROLS ---
-function initAndPlay(i) {
-  currentIdx = i; 
-  audio.src = tracks[currentIdx].f; 
-  audio.play();
-  
-  // UI & Discord status update
-  document.getElementById('track-display').innerText = "PLAYING: " + tracks[currentIdx].t;
-  document.getElementById('playBtn').innerText = "Pause";
-  document.title = "Listening to: " + tracks[currentIdx].t;
+            // 2. Play the Audio
+            audio.src = url;
+            audio.play();
 
-  if (!context) { 
-    context = new (window.AudioContext || window.webkitAudioContext)(); 
-    setupVisualizer(); 
-  }
-}
+            // 3. Update the Tab Title (What PreMiD looks for)
+            document.title = song + " - " + artist;
 
-function toggle() { 
-  if(audio.paused) {
-    audio.play();
-    document.title = "Listening to: " + tracks[currentIdx].t;
-  } else {
-    audio.pause();
-    document.title = "Paused: " + tracks[currentIdx].t;
-  }
-  document.getElementById('playBtn').innerText = audio.paused ? "Play" : "Pause";
-}
-
-function next() { 
-  if (isShuffle) currentIdx = Math.floor(Math.random() * tracks.length);
-  else currentIdx = (currentIdx + 1) % tracks.length;
-  initAndPlay(currentIdx); 
-}
-
-function prev() { 
-  currentIdx = (currentIdx - 1 + tracks.length) % tracks.length; 
-  initAndPlay(currentIdx); 
-}
-
-function toggleShuffle() { 
-  isShuffle = !isShuffle; 
-  document.getElementById('shuffleBtn').classList.toggle('active', isShuffle); 
-}
-
-function toggleRepeat() { 
-  isRepeat = !isRepeat; 
-  audio.loop = isRepeat; 
-  document.getElementById('repeatBtn').classList.toggle('active', isRepeat); 
-}
-
-audio.onended = () => { if(!isRepeat) next(); };
-
-// --- NEON RAIN VISUALIZER ---
-function setupVisualizer() {
-  const canvas = document.getElementById('viz'), ctx = canvas.getContext('2d');
-  analyser = context.createAnalyser(); analyser.fftSize = 64;
-  source = context.createMediaElementSource(audio);
-  source.connect(analyser); analyser.connect(context.destination);
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-  for(let i=0; i<90; i++) {
-    drops.push({x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight, s: 2+Math.random()*5});
-  }
-
-  function animate() {
-    requestAnimationFrame(animate);
-    canvas.width = window.innerWidth; 
-    canvas.height = window.innerHeight;
-    analyser.getByteFrequencyData(dataArray);
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    hue = (hue + 0.5) % 360;
-    const color = `hsl(${hue}, 100%, 50%)`;
-    document.getElementById('logo').style.textShadow = `0 0 15px ${color}, 0 0 30px ${color}`;
-    
-    const bass = dataArray[2] / 255;
-    drops.forEach(d => {
-      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
-      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x, d.y + 15 + (bass * 50));
-      ctx.stroke();
-      d.y += d.s + (bass * 20);
-      if(d.y > canvas.height) { d.y = -20; d.x = Math.random()*canvas.width; }
-    });
-    document.getElementById('logo').style.transform = `scale(${1 + (bass * 0.08)})`;
-  }
-  animate();
-}
-
-window.onload = refreshList;
-</script>
+            // 4. Update the Metadata Tags
+            document.getElementById('premid-details').setAttribute('content', song);
+            document.getElementById('premid-state').setAttribute('content', 'by ' + artist);
+            
+            console.log("Discord Status Updated: " + song);
+        }
+    </script>
 </body>
 </html>
