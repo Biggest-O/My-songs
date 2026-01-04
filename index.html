@@ -14,6 +14,11 @@
   .vote-container { display: flex; gap: 10px; margin-top: 12px; }
   .vote-button { background: rgba(255,255,255,0.1); border: 1px solid #444; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
   .vote-button:hover { background: #333; border-color: #00ffff; }
+  
+  /* Active State for Like/Dislike Buttons */
+  .voted-likes { background: #ff4d4d !important; border-color: #ff4d4d !important; color: white !important; box-shadow: 0 0 10px #ff4d4d; }
+  .voted-dislikes { background: #6080ff !important; border-color: #6080ff !important; color: white !important; box-shadow: 0 0 10px #6080ff; }
+
   button.action-btn { background: none; border: 1px solid #00ffff; color: #00ffff; padding: 10px 18px; border-radius: 50px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; transition: 0.2s; }
   button.action-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
   .active { background: #ff00ff !important; border-color: #ff00ff !important; color: white !important; box-shadow: 0 0 20px #ff00ff !important; }
@@ -49,7 +54,6 @@ const SUPABASE_URL = 'https://gbywinmjvbgrtaazjlgm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// IDs strictly match your Supabase Table rows
 const tracks = [
   { id: "when_i_think_about_you", t: "When I Think About You", f: "songs/when-i-think-about-you.mp3" },
   { id: "ariya", t: "Ariya", f: "songs/ariya.mp3" },
@@ -60,21 +64,30 @@ const tracks = [
 
 let audio = new Audio(), currentIdx = 0, context, analyser, source, hue = 180;
 let isShuffle = false, isRepeat = false, drops = [];
+let userIP = "visitor"; // Simple placeholder, could use a real IP fetcher
 
 // UI Update
 async function refreshList() {
-  const { data: votesData, error } = await sb.from('Votes').select('*');
+  const { data: votesData } = await sb.from('Votes').select('*');
   const container = document.getElementById('song-container');
   
   container.innerHTML = tracks.map((s, index) => {
-    const v = votesData?.find(r => r.song_id === s.id) || { likes: 0, dislikes: 0 };
+    // Count how many total likes/dislikes from the table
+    const likeCount = votesData?.filter(r => r.song_id === s.id && r.vote_type === 'likes').length || 0;
+    const dislikeCount = votesData?.filter(r => r.song_id === s.id && r.vote_type === 'dislikes').length || 0;
+    
+    // Check if THIS user has already voted for this song
+    const userVote = votesData?.find(r => r.song_id === s.id && r.user_ip === userIP);
+
     return `
       <div class="track-card">
         <div>
           <h3 style="margin:0; font-size: 1.2rem; letter-spacing: 1px;">${s.t}</h3>
           <div class="vote-container">
-            <button class="vote-button" onclick="handleVote('${s.id}','likes')">👍 ${v.likes}</button>
-            <button class="vote-button" onclick="handleVote('${s.id}','dislikes')">👎 ${v.dislikes}</button>
+            <button class="vote-button ${userVote?.vote_type === 'likes' ? 'voted-likes' : ''}" 
+                    onclick="handleVote('${s.id}','likes')">👍 ${likeCount}</button>
+            <button class="vote-button ${userVote?.vote_type === 'dislikes' ? 'voted-dislikes' : ''}" 
+                    onclick="handleVote('${s.id}','dislikes')">👎 ${dislikeCount}</button>
           </div>
         </div>
         <button class="action-btn" onclick="initAndPlay(${index})">Play</button>
@@ -82,16 +95,26 @@ async function refreshList() {
   }).join('');
 }
 
-// Database Voting Function
-async function handleVote(songId, colName) {
-  // RPC calls your "increment_vote" function in Supabase
-  const { error } = await sb.rpc('increment_vote', { song: songId, col: colName });
-  if (error) {
-    console.error("Vote Error:", error.message);
-  } else {
-    // Small delay to allow DB processing before UI refresh
-    setTimeout(refreshList, 400); 
-  }
+// TOGGLE VOTING LOGIC
+async function handleVote(songId, type) {
+    // 1. Check if user already has a vote for this song
+    const { data: existing } = await sb.from('Votes').select('*')
+        .eq('song_id', songId).eq('user_ip', userIP).single();
+
+    if (existing) {
+        // If they click the same thing, delete it (Toggle off)
+        if (existing.vote_type === type) {
+            await sb.from('Votes').delete().eq('id', existing.id);
+        } else {
+            // If they click the other one, update it (Switch vote)
+            await sb.from('Votes').update({ vote_type: type }).eq('id', existing.id);
+        }
+    } else {
+        // If no vote exists, insert new
+        await sb.from('Votes').insert([{ song_id: songId, user_ip: userIP, vote_type: type }]);
+    }
+    
+    refreshList();
 }
 
 // Player Logic
