@@ -1,3 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Big O</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#000;
+  color:white;
+  overflow-x:hidden;
+  padding-bottom:180px;
+}
+
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+}
+
+header{
+  height:50vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  z-index:2;
+}
+
+#logo{
+  font-size:5rem;
+  font-weight:900;
+  letter-spacing:10px;
+  text-shadow:0 0 20px cyan;
+  transition:0.1s;
+}
+
+main{
+  max-width:800px;
+  margin:auto;
+  padding:1rem;
+  position:relative;
+  z-index:2;
+}
+
+.track{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  padding:1rem;
+  border-radius:15px;
+  margin-bottom:1rem;
+  backdrop-filter:blur(10px);
+}
+
+.track-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.song-title{
+  font-size:1.1rem;
+  font-weight:bold;
+}
+
+.play-btn{
+  background:#00ffff;
+  border:none;
+  color:black;
+  padding:.6rem 1rem;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.vote-row{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+}
+
+.vote-btn{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.2);
+  color:white;
+  padding:.5rem .9rem;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.vote-btn:hover{
+  transform:scale(1.05);
+}
+
+.footer-player{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:#050505;
+  border-top:2px solid cyan;
+  padding:1rem;
+  z-index:5;
+}
+
+.controls{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.control-btn{
+  background:black;
+  border:1px solid cyan;
+  color:cyan;
+  padding:.7rem 1.2rem;
+  border-radius:50px;
+  cursor:pointer;
+}
+
+#nowPlaying{
+  text-align:center;
+  color:cyan;
+  margin-bottom:1rem;
+  letter-spacing:2px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="viz"></canvas>
+
+<header>
+  <h1 id="logo">BIG O</h1>
+</header>
+
+<main id="songList"></main>
+
+<div class="footer-player">
+  <div id="nowPlaying">PICK A SONG</div>
+
+  <div class="controls">
+    <button class="control-btn" onclick="prevSong()">Prev</button>
+    <button class="control-btn" onclick="togglePlay()">Play / Pause</button>
+    <button class="control-btn" onclick="nextSong()">Next</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+// ======================
+// SUPABASE
+// ======================
+
+const SUPABASE_URL = "PUT YOUR NEW SUPABASE URL HERE";
+const SUPABASE_KEY = "PUT YOUR NEW SUPABASE KEY HERE";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ======================
+// SONGS
+// ======================
+
 const tracks = [
 
   {
@@ -35,4 +207,234 @@ const tracks = [
     t: "Feeling Down",
     f: "songs/feeling-down.mp3"
   }
+
 ];
+
+// ======================
+// PLAYER
+// ======================
+
+let current = 0;
+const audio = new Audio();
+
+function playSong(i){
+
+  current = i;
+
+  audio.src = tracks[i].f;
+
+  audio.play()
+  .then(()=>{
+    document.getElementById("nowPlaying").innerText =
+      "NOW PLAYING: " + tracks[i].t;
+  })
+  .catch(()=>{
+    alert("Audio failed. Check song filename.");
+  });
+
+}
+
+function togglePlay(){
+
+  if(audio.paused){
+    audio.play();
+  }else{
+    audio.pause();
+  }
+
+}
+
+function nextSong(){
+
+  current = (current + 1) % tracks.length;
+  playSong(current);
+
+}
+
+function prevSong(){
+
+  current = (current - 1 + tracks.length) % tracks.length;
+  playSong(current);
+
+}
+
+// ======================
+// SONG LIST
+// ======================
+
+async function loadSongs(){
+
+  let votes = [];
+
+  try{
+
+    const { data } =
+      await sb.from("Votes").select("*");
+
+    votes = data || [];
+
+  }catch(err){
+    console.log(err);
+  }
+
+  const container =
+    document.getElementById("songList");
+
+  container.innerHTML = "";
+
+  tracks.forEach((song,index)=>{
+
+    const likes =
+      votes.filter(v =>
+        v.song_id === song.id &&
+        v.vote_type === "likes"
+      ).length;
+
+    const dislikes =
+      votes.filter(v =>
+        v.song_id === song.id &&
+        v.vote_type === "dislikes"
+      ).length;
+
+    const div =
+      document.createElement("div");
+
+    div.className = "track";
+
+    div.innerHTML = `
+      <div class="track-top">
+        <div class="song-title">${song.t}</div>
+
+        <button class="play-btn"
+        onclick="playSong(${index})">
+        Play
+        </button>
+      </div>
+
+      <div class="vote-row">
+
+        <button class="vote-btn"
+        onclick="vote('${song.id}','likes')">
+        👍 ${likes}
+        </button>
+
+        <button class="vote-btn"
+        onclick="vote('${song.id}','dislikes')">
+        👎 ${dislikes}
+        </button>
+
+      </div>
+    `;
+
+    container.appendChild(div);
+
+  });
+
+}
+
+// ======================
+// VOTING
+// ======================
+
+async function vote(songId,type){
+
+  try{
+
+    await sb
+      .from("Votes")
+      .insert([{
+        song_id:songId,
+        vote_type:type
+      }]);
+
+    loadSongs();
+
+  }catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+// ======================
+// VISUALIZER
+// ======================
+
+const canvas =
+  document.getElementById("viz");
+
+const ctx =
+  canvas.getContext("2d");
+
+let hue = 180;
+
+function resize(){
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+}
+
+resize();
+
+window.addEventListener("resize",resize);
+
+function animate(){
+
+  requestAnimationFrame(animate);
+
+  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  hue += 0.5;
+
+  const color =
+    `hsl(${hue},100%,50%)`;
+
+  for(let i=0;i<70;i++){
+
+    const x =
+      Math.random()*canvas.width;
+
+    const y =
+      Math.random()*canvas.height;
+
+    const len =
+      Math.random()*40;
+
+    ctx.strokeStyle = color;
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,y);
+    ctx.lineTo(x,y+len);
+
+    ctx.stroke();
+
+  }
+
+  const pulse =
+    audio.paused ? 1 :
+    1.02 + Math.random()*0.03;
+
+  document.getElementById("logo")
+    .style.transform =
+      `scale(${pulse})`;
+
+  document.getElementById("logo")
+    .style.textShadow =
+      `0 0 20px ${color}`;
+
+}
+
+animate();
+
+// ======================
+
+loadSongs();
+
+</script>
+
+</body>
+</html>
