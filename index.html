@@ -202,6 +202,22 @@ const sb = supabase.createClient(
 );
 
 /* =========================
+   UNIQUE USER ID
+========================= */
+
+if(!localStorage.getItem("user_id")){
+
+  localStorage.setItem(
+    "user_id",
+    crypto.randomUUID()
+  );
+
+}
+
+const USER_ID =
+localStorage.getItem("user_id");
+
+/* =========================
    SONGS
 ========================= */
 
@@ -420,7 +436,7 @@ async function loadSongs(){
 }
 
 /* =========================
-   ONE-VOTE SYSTEM
+   ONE VOTE PER USER
 ========================= */
 
 async function vote(songId,type){
@@ -432,17 +448,17 @@ async function vote(songId,type){
     .from("Votes")
     .select("*")
     .eq("song_id", songId)
-    .eq("user_ip", "guest")
+    .eq("user_ip", USER_ID)
     .maybeSingle();
 
     if(existing){
 
+      // already voted same thing
       if(existing.vote_type === type){
-
         return;
-
       }
 
+      // switch vote
       await sb
       .from("Votes")
       .update({
@@ -452,11 +468,12 @@ async function vote(songId,type){
 
     }else{
 
+      // first vote
       await sb
       .from("Votes")
       .insert([{
         song_id:songId,
-        user_ip:"guest",
+        user_ip:USER_ID,
         vote_type:type
       }]);
 
