@@ -3,18 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Big O</title>
 
 <style>
 
 body{
   margin:0;
-  font-family:Arial,sans-serif;
   background:#000;
   color:white;
+  font-family:Arial,sans-serif;
   overflow-x:hidden;
-  padding-bottom:180px;
+  padding-bottom:170px;
 }
+
+/* SMOOTH RAIN BACKGROUND */
 
 canvas{
   position:fixed;
@@ -24,6 +27,8 @@ canvas{
   height:100%;
   z-index:0;
 }
+
+/* HEADER */
 
 header{
   height:50vh;
@@ -35,12 +40,15 @@ header{
 }
 
 #logo{
-  font-size:5rem;
+  font-size:6rem;
   font-weight:900;
-  letter-spacing:10px;
-  text-shadow:0 0 20px cyan;
+  letter-spacing:12px;
+  color:white;
+  text-shadow:0 0 25px cyan;
   transition:transform 0.08s linear;
 }
+
+/* SONG LIST */
 
 main{
   max-width:800px;
@@ -54,7 +62,7 @@ main{
   background:rgba(255,255,255,0.05);
   border:1px solid rgba(255,255,255,0.1);
   padding:1rem;
-  border-radius:15px;
+  border-radius:16px;
   margin-bottom:1rem;
   backdrop-filter:blur(10px);
 }
@@ -81,24 +89,27 @@ main{
 }
 
 .vote-row{
-  margin-top:12px;
   display:flex;
   gap:10px;
+  margin-top:12px;
 }
 
 .vote-btn{
   background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.15);
   color:white;
   padding:.5rem .9rem;
   border-radius:10px;
   cursor:pointer;
-  transition:.2s;
+  transition:0.2s;
 }
 
 .vote-btn:hover{
   transform:scale(1.05);
+  background:rgba(255,255,255,0.15);
 }
+
+/* PLAYER */
 
 .footer-player{
   position:fixed;
@@ -108,6 +119,14 @@ main{
   border-top:2px solid cyan;
   padding:1rem;
   z-index:5;
+}
+
+#nowPlaying{
+  text-align:center;
+  color:cyan;
+  margin-bottom:1rem;
+  letter-spacing:2px;
+  font-weight:bold;
 }
 
 .controls{
@@ -124,13 +143,12 @@ main{
   padding:.7rem 1.2rem;
   border-radius:50px;
   cursor:pointer;
+  transition:0.2s;
 }
 
-#nowPlaying{
-  text-align:center;
-  color:cyan;
-  margin-bottom:1rem;
-  letter-spacing:2px;
+.control-btn:hover{
+  background:cyan;
+  color:black;
 }
 
 </style>
@@ -154,19 +172,16 @@ main{
 
   <div class="controls">
 
-    <button class="control-btn"
-    onclick="prevSong()">
-    Prev
+    <button class="control-btn" onclick="prevSong()">
+      Prev
     </button>
 
-    <button class="control-btn"
-    onclick="togglePlay()">
-    Play / Pause
+    <button class="control-btn" onclick="togglePlay()">
+      Play / Pause
     </button>
 
-    <button class="control-btn"
-    onclick="nextSong()">
-    Next
+    <button class="control-btn" onclick="nextSong()">
+      Next
     </button>
 
   </div>
@@ -177,69 +192,68 @@ main{
 
 <script>
 
-// ======================
-// SUPABASE
-// ======================
+/* =========================
+   SUPABASE
+========================= */
 
 const SUPABASE_URL =
-"https://gbywinmjvbgrtaazjlgm.supabase.co";
+"https://gbizrnejfmgjkrxjbisu.supabase.co";
 
 const SUPABASE_KEY =
 "sb_publishable_4PRIlOOAZygDex8gj9B8Mw_A9mic2o7";
 
-const sb =
-supabase.createClient(
+const sb = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
-// ======================
-// SONGS
-// ======================
+/* =========================
+   SONGS
+========================= */
 
 const tracks = [
 
-  {
-    id:"changed_memories",
-    t:"Changed Memories",
-    f:"songs/changed-memories.wav"
-  },
+{
+  id:"changed_memories",
+  t:"Changed Memories",
+  f:"songs/changed-memories.wav"
+},
 
-  {
-    id:"when_i_think_about_you",
-    t:"When I Think About You",
-    f:"songs/when-i-think-about-you.mp3"
-  },
+{
+  id:"when_i_think_about_you",
+  t:"When I Think About You",
+  f:"songs/when-i-think-about-you.mp3"
+},
 
-  {
-    id:"ariya",
-    t:"Ariya",
-    f:"songs/ariya.mp3"
-  },
+{
+  id:"ariya",
+  t:"Ariya",
+  f:"songs/ariya.mp3"
+},
 
-  {
-    id:"nice_like_this",
-    t:"Nice Like This",
-    f:"songs/nice-like-this.mp3"
-  },
+{
+  id:"nice_like_this",
+  t:"Nice Like This",
+  f:"songs/nice-like-this.mp3"
+},
 
-  {
-    id:"youre_my_home",
-    t:"You're My Home",
-    f:"songs/youre-my-home.mp3"
-  },
+{
+  id:"youre_my_home",
+  t:"You're My Home",
+  f:"songs/youre-my-home.mp3"
+},
 
-  {
-    id:"feeling_down",
-    t:"Feeling Down",
-    f:"songs/feeling-down.mp3"
-  }
+{
+  id:"feeling_down",
+  t:"Feeling Down",
+  f:"songs/feeling-down.mp3"
+}
 
 ];
 
-// ======================
-// AUDIO PLAYER
-// ======================
+/* =========================
+   AUDIO PLAYER
+========================= */
 
 let current = 0;
 
@@ -251,8 +265,6 @@ function playSong(i){
 
   audio.src = tracks[i].f;
 
-  audio.load();
-
   audio.play()
   .then(()=>{
 
@@ -262,13 +274,11 @@ function playSong(i){
     "NOW PLAYING: " + tracks[i].t;
 
   })
-  .catch((err)=>{
-
-    console.log(err);
+  .catch(()=>{
 
     alert(
-      "Audio failed.\n\nCheck filename:\n\n" +
-      tracks[i].f
+      "Audio failed.\n\nCheck filename:\n\n"
+      + tracks[i].f
     );
 
   });
@@ -278,28 +288,25 @@ function playSong(i){
 function togglePlay(){
 
   if(audio.src === ""){
-
-    playSong(0);
+    playSong(current);
     return;
-
   }
 
   if(audio.paused){
-
     audio.play();
-
   }else{
-
     audio.pause();
-
   }
 
 }
 
 function nextSong(){
 
-  current =
-  (current + 1) % tracks.length;
+  current++;
+
+  if(current >= tracks.length){
+    current = 0;
+  }
 
   playSong(current);
 
@@ -307,17 +314,19 @@ function nextSong(){
 
 function prevSong(){
 
-  current =
-  (current - 1 + tracks.length)
-  % tracks.length;
+  current--;
+
+  if(current < 0){
+    current = tracks.length - 1;
+  }
 
   playSong(current);
 
 }
 
-// ======================
-// LOAD SONGS
-// ======================
+/* =========================
+   LOAD SONGS
+========================= */
 
 async function loadSongs(){
 
@@ -331,14 +340,10 @@ async function loadSongs(){
     .select("*");
 
     if(error){
-
       console.log(error);
-
-    }else{
-
-      votes = data || [];
-
     }
+
+    votes = data || [];
 
   }catch(err){
 
@@ -347,9 +352,7 @@ async function loadSongs(){
   }
 
   const container =
-  document.getElementById(
-    "songList"
-  );
+  document.getElementById("songList");
 
   container.innerHTML = "";
 
@@ -383,7 +386,9 @@ async function loadSongs(){
         <button
         class="play-btn"
         onclick="playSong(${index})">
-        Play
+
+          Play
+
         </button>
 
       </div>
@@ -394,7 +399,7 @@ async function loadSongs(){
         class="vote-btn"
         onclick="vote('${song.id}','likes')">
 
-        👍 ${likes}
+          👍 ${likes}
 
         </button>
 
@@ -402,7 +407,7 @@ async function loadSongs(){
         class="vote-btn"
         onclick="vote('${song.id}','dislikes')">
 
-        👎 ${dislikes}
+          👎 ${dislikes}
 
         </button>
 
@@ -416,9 +421,9 @@ async function loadSongs(){
 
 }
 
-// ======================
-// VOTING
-// ======================
+/* =========================
+   VOTING
+========================= */
 
 async function vote(songId,type){
 
@@ -429,6 +434,7 @@ async function vote(songId,type){
     .from("Votes")
     .insert([{
       song_id:songId,
+      user_ip:"guest",
       vote_type:type
     }]);
 
@@ -437,27 +443,28 @@ async function vote(songId,type){
       console.log(error);
 
       alert(
-        "Vote failed:\n\n" +
-        error.message
+        "Vote failed.\n\n"
+        + error.message
       );
 
-    }else{
-
-      loadSongs();
-
+      return;
     }
+
+    loadSongs();
 
   }catch(err){
 
     console.log(err);
 
+    alert("Vote failed.");
+
   }
 
 }
 
-// ======================
-// SMOOTH RAIN
-// ======================
+/* =========================
+   SMOOTH RAIN
+========================= */
 
 const canvas =
 document.getElementById("viz");
@@ -488,10 +495,13 @@ for(let i=0;i<120;i++){
 
   rain.push({
 
-    x:Math.random()*canvas.width,
-    y:Math.random()*canvas.height,
-    speed:4+Math.random()*6,
-    len:10+Math.random()*30
+    x:Math.random()*window.innerWidth,
+
+    y:Math.random()*window.innerHeight,
+
+    len:10 + Math.random()*25,
+
+    speed:4 + Math.random()*6
 
   });
 
@@ -501,12 +511,10 @@ let hue = 180;
 
 function animate(){
 
-  requestAnimationFrame(
-    animate
-  );
+  requestAnimationFrame(animate);
 
   ctx.fillStyle =
-  "rgba(0,0,0,0.15)";
+  "rgba(0,0,0,0.18)";
 
   ctx.fillRect(
     0,
@@ -515,24 +523,22 @@ function animate(){
     canvas.height
   );
 
-  hue += 0.3;
+  hue += 0.4;
 
   const color =
   `hsl(${hue},100%,50%)`;
 
   ctx.strokeStyle = color;
+
   ctx.lineWidth = 1.2;
 
-  for(const r of rain){
+  rain.forEach(r=>{
 
     ctx.beginPath();
 
     ctx.moveTo(r.x,r.y);
 
-    ctx.lineTo(
-      r.x,
-      r.y + r.len
-    );
+    ctx.lineTo(r.x,r.y+r.len);
 
     ctx.stroke();
 
@@ -540,29 +546,25 @@ function animate(){
 
     if(r.y > canvas.height){
 
-      r.y = -50;
-      r.x = Math.random()
-      * canvas.width;
+      r.y = -20;
+
+      r.x =
+      Math.random()*canvas.width;
 
     }
 
-  }
+  });
 
-  const logo =
-  document.getElementById(
-    "logo"
-  );
-
-  const pulse =
+  const scale =
   audio.paused
   ? 1
-  : 1.02 +
-    Math.sin(
-      Date.now()*0.004
-    ) * 0.02;
+  : 1.03 + Math.sin(Date.now()*0.005)*0.02;
+
+  const logo =
+  document.getElementById("logo");
 
   logo.style.transform =
-  `scale(${pulse})`;
+  `scale(${scale})`;
 
   logo.style.textShadow =
   `0 0 25px ${color}`;
@@ -571,7 +573,7 @@ function animate(){
 
 animate();
 
-// ======================
+/* ========================= */
 
 loadSongs();
 
