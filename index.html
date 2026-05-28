@@ -185,7 +185,7 @@ const SUPABASE_URL =
 "https://gbywinmjvbgrtaazjlgm.supabase.co";
 
 const SUPABASE_KEY =
-"PASTE_YOUR_NEW_ANON_KEY_HERE";
+"sb_publishable_4PRIlOOAZygDex8gj9B8Mw_A9mic2o7";
 
 const sb =
 supabase.createClient(
@@ -202,7 +202,7 @@ const tracks = [
   {
     id:"changed_memories",
     t:"Changed Memories",
-    f:"songs/Changed Memories.wav"
+    f:"songs/changed-memories.wav"
   },
 
   {
@@ -435,7 +435,11 @@ async function vote(songId,type){
     if(error){
 
       console.log(error);
-      alert(error.message);
+
+      alert(
+        "Vote failed:\n\n" +
+        error.message
+      );
 
     }else{
 
