@@ -161,10 +161,14 @@ main{
 // SUPABASE
 // ======================
 
-const SUPABASE_URL = "PUT YOUR NEW SUPABASE URL HERE";
-const SUPABASE_KEY = "PUT YOUR NEW SUPABASE KEY HERE";
+const SUPABASE_URL = "https://gbywinmjvbgrtaazjlgm.supabase.co";
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_KEY = "sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a";
+
+const sb = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 // ======================
 // SONGS
@@ -215,6 +219,7 @@ const tracks = [
 // ======================
 
 let current = 0;
+
 const audio = new Audio();
 
 function playSong(i){
@@ -225,11 +230,15 @@ function playSong(i){
 
   audio.play()
   .then(()=>{
+
     document.getElementById("nowPlaying").innerText =
       "NOW PLAYING: " + tracks[i].t;
+
   })
   .catch(()=>{
+
     alert("Audio failed. Check song filename.");
+
   });
 
 }
@@ -237,9 +246,13 @@ function playSong(i){
 function togglePlay(){
 
   if(audio.paused){
+
     audio.play();
+
   }else{
+
     audio.pause();
+
   }
 
 }
@@ -247,6 +260,7 @@ function togglePlay(){
 function nextSong(){
 
   current = (current + 1) % tracks.length;
+
   playSong(current);
 
 }
@@ -254,6 +268,7 @@ function nextSong(){
 function prevSong(){
 
   current = (current - 1 + tracks.length) % tracks.length;
+
   playSong(current);
 
 }
@@ -274,7 +289,9 @@ async function loadSongs(){
     votes = data || [];
 
   }catch(err){
+
     console.log(err);
+
   }
 
   const container =
@@ -303,24 +320,32 @@ async function loadSongs(){
 
     div.innerHTML = `
       <div class="track-top">
-        <div class="song-title">${song.t}</div>
+
+        <div class="song-title">
+          ${song.t}
+        </div>
 
         <button class="play-btn"
         onclick="playSong(${index})">
-        Play
+          Play
         </button>
+
       </div>
 
       <div class="vote-row">
 
         <button class="vote-btn"
         onclick="vote('${song.id}','likes')">
-        👍 ${likes}
+
+          👍 ${likes}
+
         </button>
 
         <button class="vote-btn"
         onclick="vote('${song.id}','dislikes')">
-        👎 ${dislikes}
+
+          👎 ${dislikes}
+
         </button>
 
       </div>
@@ -343,8 +368,10 @@ async function vote(songId,type){
     await sb
       .from("Votes")
       .insert([{
+
         song_id:songId,
         vote_type:type
+
       }]);
 
     loadSongs();
@@ -378,14 +405,24 @@ function resize(){
 
 resize();
 
-window.addEventListener("resize",resize);
+window.addEventListener(
+  "resize",
+  resize
+);
 
 function animate(){
 
   requestAnimationFrame(animate);
 
-  ctx.fillStyle = "rgba(0,0,0,0.08)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle =
+    "rgba(0,0,0,0.08)";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
   hue += 0.5;
 
@@ -408,6 +445,7 @@ function animate(){
     ctx.beginPath();
 
     ctx.moveTo(x,y);
+
     ctx.lineTo(x,y+len);
 
     ctx.stroke();
@@ -415,8 +453,9 @@ function animate(){
   }
 
   const pulse =
-    audio.paused ? 1 :
-    1.02 + Math.random()*0.03;
+    audio.paused
+    ? 1
+    : 1.02 + Math.random()*0.03;
 
   document.getElementById("logo")
     .style.transform =
