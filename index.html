@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Big O</title>
 
 <style>
@@ -17,8 +16,6 @@ body{
   padding-bottom:170px;
 }
 
-/* SMOOTH RAIN BACKGROUND */
-
 canvas{
   position:fixed;
   top:0;
@@ -27,8 +24,6 @@ canvas{
   height:100%;
   z-index:0;
 }
-
-/* HEADER */
 
 header{
   height:50vh;
@@ -47,8 +42,6 @@ header{
   text-shadow:0 0 25px cyan;
   transition:transform 0.08s linear;
 }
-
-/* SONG LIST */
 
 main{
   max-width:800px;
@@ -108,8 +101,6 @@ main{
   transform:scale(1.05);
   background:rgba(255,255,255,0.15);
 }
-
-/* PLAYER */
 
 .footer-player{
   position:fixed;
@@ -172,15 +163,18 @@ main{
 
   <div class="controls">
 
-    <button class="control-btn" onclick="prevSong()">
+    <button class="control-btn"
+    onclick="prevSong()">
       Prev
     </button>
 
-    <button class="control-btn" onclick="togglePlay()">
+    <button class="control-btn"
+    onclick="togglePlay()">
       Play / Pause
     </button>
 
-    <button class="control-btn" onclick="nextSong()">
+    <button class="control-btn"
+    onclick="nextSong()">
       Next
     </button>
 
@@ -288,14 +282,20 @@ function playSong(i){
 function togglePlay(){
 
   if(audio.src === ""){
+
     playSong(current);
     return;
+
   }
 
   if(audio.paused){
+
     audio.play();
+
   }else{
+
     audio.pause();
+
   }
 
 }
@@ -334,14 +334,10 @@ async function loadSongs(){
 
   try{
 
-    const { data, error } =
+    const { data } =
     await sb
     .from("Votes")
     .select("*");
-
-    if(error){
-      console.log(error);
-    }
 
     votes = data || [];
 
@@ -352,7 +348,9 @@ async function loadSongs(){
   }
 
   const container =
-  document.getElementById("songList");
+  document.getElementById(
+    "songList"
+  );
 
   container.innerHTML = "";
 
@@ -422,32 +420,46 @@ async function loadSongs(){
 }
 
 /* =========================
-   VOTING
+   ONE-VOTE SYSTEM
 ========================= */
 
 async function vote(songId,type){
 
   try{
 
-    const { error } =
+    const { data: existing } =
     await sb
     .from("Votes")
-    .insert([{
-      song_id:songId,
-      user_ip:"guest",
-      vote_type:type
-    }]);
+    .select("*")
+    .eq("song_id", songId)
+    .eq("user_ip", "guest")
+    .maybeSingle();
 
-    if(error){
+    if(existing){
 
-      console.log(error);
+      if(existing.vote_type === type){
 
-      alert(
-        "Vote failed.\n\n"
-        + error.message
-      );
+        return;
 
-      return;
+      }
+
+      await sb
+      .from("Votes")
+      .update({
+        vote_type:type
+      })
+      .eq("id", existing.id);
+
+    }else{
+
+      await sb
+      .from("Votes")
+      .insert([{
+        song_id:songId,
+        user_ip:"guest",
+        vote_type:type
+      }]);
+
     }
 
     loadSongs();
@@ -496,11 +508,8 @@ for(let i=0;i<120;i++){
   rain.push({
 
     x:Math.random()*window.innerWidth,
-
     y:Math.random()*window.innerHeight,
-
     len:10 + Math.random()*25,
-
     speed:4 + Math.random()*6
 
   });
@@ -511,7 +520,9 @@ let hue = 180;
 
 function animate(){
 
-  requestAnimationFrame(animate);
+  requestAnimationFrame(
+    animate
+  );
 
   ctx.fillStyle =
   "rgba(0,0,0,0.18)";
@@ -558,10 +569,14 @@ function animate(){
   const scale =
   audio.paused
   ? 1
-  : 1.03 + Math.sin(Date.now()*0.005)*0.02;
+  : 1.03 +
+    Math.sin(Date.now()*0.005)
+    * 0.02;
 
   const logo =
-  document.getElementById("logo");
+  document.getElementById(
+    "logo"
+  );
 
   logo.style.transform =
   `scale(${scale})`;
