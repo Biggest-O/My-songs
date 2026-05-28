@@ -6,6 +6,7 @@
 <title>Big O</title>
 
 <style>
+
 body{
   margin:0;
   font-family:Arial,sans-serif;
@@ -38,7 +39,7 @@ header{
   font-weight:900;
   letter-spacing:10px;
   text-shadow:0 0 20px cyan;
-  transition:0.1s;
+  transition:transform 0.08s linear;
 }
 
 main{
@@ -92,6 +93,7 @@ main{
   padding:.5rem .9rem;
   border-radius:10px;
   cursor:pointer;
+  transition:.2s;
 }
 
 .vote-btn:hover{
@@ -130,6 +132,7 @@ main{
   margin-bottom:1rem;
   letter-spacing:2px;
 }
+
 </style>
 </head>
 
@@ -144,13 +147,30 @@ main{
 <main id="songList"></main>
 
 <div class="footer-player">
-  <div id="nowPlaying">PICK A SONG</div>
+
+  <div id="nowPlaying">
+    PICK A SONG
+  </div>
 
   <div class="controls">
-    <button class="control-btn" onclick="prevSong()">Prev</button>
-    <button class="control-btn" onclick="togglePlay()">Play / Pause</button>
-    <button class="control-btn" onclick="nextSong()">Next</button>
+
+    <button class="control-btn"
+    onclick="prevSong()">
+    Prev
+    </button>
+
+    <button class="control-btn"
+    onclick="togglePlay()">
+    Play / Pause
+    </button>
+
+    <button class="control-btn"
+    onclick="nextSong()">
+    Next
+    </button>
+
   </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -161,11 +181,14 @@ main{
 // SUPABASE
 // ======================
 
-const SUPABASE_URL = "https://gbywinmjvbgrtaazjlgm.supabase.co";
+const SUPABASE_URL =
+"https://gbywinmjvbgrtaazjlgm.supabase.co";
 
-const SUPABASE_KEY = "sb_publishable_Bli__qzQMokBoSXPrFPHKA_DXVXgM2a";
+const SUPABASE_KEY =
+"PASTE_YOUR_NEW_ANON_KEY_HERE";
 
-const sb = supabase.createClient(
+const sb =
+supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
@@ -177,45 +200,45 @@ const sb = supabase.createClient(
 const tracks = [
 
   {
-    id: "changed_memories",
-    t: "Changed Memories",
-    f: "songs/Changed Memories.wav"
+    id:"changed_memories",
+    t:"Changed Memories",
+    f:"songs/Changed Memories.wav"
   },
 
   {
-    id: "when_i_think_about_you",
-    t: "When I Think About You",
-    f: "songs/when-i-think-about-you.mp3"
+    id:"when_i_think_about_you",
+    t:"When I Think About You",
+    f:"songs/when-i-think-about-you.mp3"
   },
 
   {
-    id: "ariya",
-    t: "Ariya",
-    f: "songs/ariya.mp3"
+    id:"ariya",
+    t:"Ariya",
+    f:"songs/ariya.mp3"
   },
 
   {
-    id: "nice_like_this",
-    t: "Nice Like This",
-    f: "songs/nice-like-this.mp3"
+    id:"nice_like_this",
+    t:"Nice Like This",
+    f:"songs/nice-like-this.mp3"
   },
 
   {
-    id: "youre_my_home",
-    t: "You're My Home",
-    f: "songs/youre-my-home.mp3"
+    id:"youre_my_home",
+    t:"You're My Home",
+    f:"songs/youre-my-home.mp3"
   },
 
   {
-    id: "feeling_down",
-    t: "Feeling Down",
-    f: "songs/feeling-down.mp3"
+    id:"feeling_down",
+    t:"Feeling Down",
+    f:"songs/feeling-down.mp3"
   }
 
 ];
 
 // ======================
-// PLAYER
+// AUDIO PLAYER
 // ======================
 
 let current = 0;
@@ -228,22 +251,38 @@ function playSong(i){
 
   audio.src = tracks[i].f;
 
+  audio.load();
+
   audio.play()
   .then(()=>{
 
-    document.getElementById("nowPlaying").innerText =
-      "NOW PLAYING: " + tracks[i].t;
+    document.getElementById(
+      "nowPlaying"
+    ).innerText =
+    "NOW PLAYING: " + tracks[i].t;
 
   })
-  .catch(()=>{
+  .catch((err)=>{
 
-    alert("Audio failed. Check song filename.");
+    console.log(err);
+
+    alert(
+      "Audio failed.\n\nCheck filename:\n\n" +
+      tracks[i].f
+    );
 
   });
 
 }
 
 function togglePlay(){
+
+  if(audio.src === ""){
+
+    playSong(0);
+    return;
+
+  }
 
   if(audio.paused){
 
@@ -259,7 +298,8 @@ function togglePlay(){
 
 function nextSong(){
 
-  current = (current + 1) % tracks.length;
+  current =
+  (current + 1) % tracks.length;
 
   playSong(current);
 
@@ -267,14 +307,16 @@ function nextSong(){
 
 function prevSong(){
 
-  current = (current - 1 + tracks.length) % tracks.length;
+  current =
+  (current - 1 + tracks.length)
+  % tracks.length;
 
   playSong(current);
 
 }
 
 // ======================
-// SONG LIST
+// LOAD SONGS
 // ======================
 
 async function loadSongs(){
@@ -283,10 +325,20 @@ async function loadSongs(){
 
   try{
 
-    const { data } =
-      await sb.from("Votes").select("*");
+    const { data, error } =
+    await sb
+    .from("Votes")
+    .select("*");
 
-    votes = data || [];
+    if(error){
+
+      console.log(error);
+
+    }else{
+
+      votes = data || [];
+
+    }
 
   }catch(err){
 
@@ -295,60 +347,67 @@ async function loadSongs(){
   }
 
   const container =
-    document.getElementById("songList");
+  document.getElementById(
+    "songList"
+  );
 
   container.innerHTML = "";
 
   tracks.forEach((song,index)=>{
 
     const likes =
-      votes.filter(v =>
-        v.song_id === song.id &&
-        v.vote_type === "likes"
-      ).length;
+    votes.filter(v =>
+      v.song_id === song.id &&
+      v.vote_type === "likes"
+    ).length;
 
     const dislikes =
-      votes.filter(v =>
-        v.song_id === song.id &&
-        v.vote_type === "dislikes"
-      ).length;
+    votes.filter(v =>
+      v.song_id === song.id &&
+      v.vote_type === "dislikes"
+    ).length;
 
     const div =
-      document.createElement("div");
+    document.createElement("div");
 
     div.className = "track";
 
     div.innerHTML = `
+
       <div class="track-top">
 
         <div class="song-title">
           ${song.t}
         </div>
 
-        <button class="play-btn"
+        <button
+        class="play-btn"
         onclick="playSong(${index})">
-          Play
+        Play
         </button>
 
       </div>
 
       <div class="vote-row">
 
-        <button class="vote-btn"
+        <button
+        class="vote-btn"
         onclick="vote('${song.id}','likes')">
 
-          👍 ${likes}
+        👍 ${likes}
 
         </button>
 
-        <button class="vote-btn"
+        <button
+        class="vote-btn"
         onclick="vote('${song.id}','dislikes')">
 
-          👎 ${dislikes}
+        👎 ${dislikes}
 
         </button>
 
       </div>
+
     `;
 
     container.appendChild(div);
@@ -365,16 +424,24 @@ async function vote(songId,type){
 
   try{
 
+    const { error } =
     await sb
-      .from("Votes")
-      .insert([{
+    .from("Votes")
+    .insert([{
+      song_id:songId,
+      vote_type:type
+    }]);
 
-        song_id:songId,
-        vote_type:type
+    if(error){
 
-      }]);
+      console.log(error);
+      alert(error.message);
 
-    loadSongs();
+    }else{
+
+      loadSongs();
+
+    }
 
   }catch(err){
 
@@ -385,21 +452,22 @@ async function vote(songId,type){
 }
 
 // ======================
-// VISUALIZER
+// SMOOTH RAIN
 // ======================
 
 const canvas =
-  document.getElementById("viz");
+document.getElementById("viz");
 
 const ctx =
-  canvas.getContext("2d");
-
-let hue = 180;
+canvas.getContext("2d");
 
 function resize(){
 
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width =
+  window.innerWidth;
+
+  canvas.height =
+  window.innerHeight;
 
 }
 
@@ -410,12 +478,31 @@ window.addEventListener(
   resize
 );
 
+const rain = [];
+
+for(let i=0;i<120;i++){
+
+  rain.push({
+
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    speed:4+Math.random()*6,
+    len:10+Math.random()*30
+
+  });
+
+}
+
+let hue = 180;
+
 function animate(){
 
-  requestAnimationFrame(animate);
+  requestAnimationFrame(
+    animate
+  );
 
   ctx.fillStyle =
-    "rgba(0,0,0,0.08)";
+  "rgba(0,0,0,0.15)";
 
   ctx.fillRect(
     0,
@@ -424,46 +511,57 @@ function animate(){
     canvas.height
   );
 
-  hue += 0.5;
+  hue += 0.3;
 
   const color =
-    `hsl(${hue},100%,50%)`;
+  `hsl(${hue},100%,50%)`;
 
-  for(let i=0;i<70;i++){
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.2;
 
-    const x =
-      Math.random()*canvas.width;
-
-    const y =
-      Math.random()*canvas.height;
-
-    const len =
-      Math.random()*40;
-
-    ctx.strokeStyle = color;
+  for(const r of rain){
 
     ctx.beginPath();
 
-    ctx.moveTo(x,y);
+    ctx.moveTo(r.x,r.y);
 
-    ctx.lineTo(x,y+len);
+    ctx.lineTo(
+      r.x,
+      r.y + r.len
+    );
 
     ctx.stroke();
 
+    r.y += r.speed;
+
+    if(r.y > canvas.height){
+
+      r.y = -50;
+      r.x = Math.random()
+      * canvas.width;
+
+    }
+
   }
 
+  const logo =
+  document.getElementById(
+    "logo"
+  );
+
   const pulse =
-    audio.paused
-    ? 1
-    : 1.02 + Math.random()*0.03;
+  audio.paused
+  ? 1
+  : 1.02 +
+    Math.sin(
+      Date.now()*0.004
+    ) * 0.02;
 
-  document.getElementById("logo")
-    .style.transform =
-      `scale(${pulse})`;
+  logo.style.transform =
+  `scale(${pulse})`;
 
-  document.getElementById("logo")
-    .style.textShadow =
-      `0 0 20px ${color}`;
+  logo.style.textShadow =
+  `0 0 25px ${color}`;
 
 }
 
